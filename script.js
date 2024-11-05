@@ -34,7 +34,7 @@ const questions = [
     question: 'Apakah air yang Anda gunakan terlihat jernih/keruh?',
     expertCF: 0.8, 
     options: [
-      { text: 'Sangat jernih', cf: 0.9, conclusionText: 'Kejernihan air sangat baik', adviceText: 'Lanjutkan menjaga kejernihan air untuk kesehatan ikan.' },
+      { text: 'Sangat jernih', cf: 0.8, conclusionText: 'Kejernihan air sangat baik', adviceText: 'Lanjutkan menjaga kejernihan air untuk kesehatan ikan.' },
       { text: 'Sedikit keruh', cf: 0.5, conclusionText: 'Kejernihan air kurang optimal', adviceText: 'Anda dapat melakukan pengurasan air dengan rentang waktu dua minggu sekali.' },
       { text: 'Sangat Keruh', cf: 0, conclusionText: 'Kejernihan air sangat buruk', adviceText: 'Anda Perlu memeriksa kondisi filtrasi pada akurium, dan melakukan pengurasan secara menyeluruh.' }
     ]
