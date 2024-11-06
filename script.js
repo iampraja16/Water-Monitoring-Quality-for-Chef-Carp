@@ -45,8 +45,8 @@ const questions = [
     expertCF: 0.8,
     options: [
       { text: 'Tidak ada bau', cf: 0.7, conclusionText: 'Air tidak memiliki bau yang mengganggu', adviceText: 'Pertahankan kebersihan air agar tidak muncul bau.' },
-      { text: 'Bau samar-samar', cf: 0.5, conclusionText: 'Air memiliki sedikit bau', adviceText: 'Anda dapat mengecek sistem filtrasi dan dan mengganti air secara berkala.' },
-      { text: 'Bau sangat kuat', cf: 0, conclusionText: 'Air memiliki bau yang kuat', adviceText: 'Anda perlu mengecek sumber air yang di gunakan, atau menggunakan sumber air lain' }
+      { text: 'Bau samar-samar', cf: 0.5, conclusionText: 'Air memiliki sedikit bau', adviceText: 'Anda dapat mengecek sistem filtrasi dan mengganti air secara berkala.' },
+      { text: 'Bau sangat kuat', cf: 0, conclusionText: 'Air memiliki bau yang kuat', adviceText: 'Anda perlu mengecek sumber air yang digunakan, atau menggunakan sumber air lain' }
     ]
   },
   { 
@@ -56,7 +56,7 @@ const questions = [
     options: [
       { text: 'Bening', cf: 0.7, conclusionText: 'Air tampak sangat bening', adviceText: 'Lanjutkan menjaga kualitas air tetap bening untuk kesehatan ikan.' },
       { text: 'Sedikit berwarna', cf: 0.5, conclusionText: 'Air memiliki warna sedikit keruh', adviceText: 'Anda perlu mengganti air dan juga meningkatkan sistem filtrasi agar lebih baik' },
-      { text: 'Sangat berwarna', cf: 0, conclusionText: 'Anda perlu lakukan pembersihan dan periksa sumber pencemaran untuk menjaga kualitas air' }
+      { text: 'Sangat berwarna', cf: 0, conclusionText: 'Anda perlu lakukan pembersihan dan periksa sumber pencemaran untuk menjaga kualitas air' }
     ]
   }
 ];
@@ -71,7 +71,7 @@ function generateQuestions() {
   let questionHTML = '';
   questions.forEach((q, index) => {
     questionHTML += `<div class="question"><p>${q.question}</p>`;
-    q.options.forEach((opt, optIndex) => {
+    q.options.forEach((opt) => {
       questionHTML += `
           <label class="option">
               <input type="radio" name="q${index}" value="${opt.cf}">
@@ -94,7 +94,7 @@ function forwardChaining() {
     const userCF = parseFloat(userAnswer?.value || 0);
     const expertCF = q.expertCF;
 
-    // Penggabungan CF dengan menggunakan metode/pendekekatan min
+    // Penggabungan CF dengan menggunakan metode minimum
     const combinedCF = Math.min(userCF, expertCF);
     cfValues.push(combinedCF * 0.37);
 
@@ -116,6 +116,16 @@ function forwardChaining() {
     cfTotal = cfTotal + cfValues[i] - (cfTotal * cfValues[i]);
   }
 
+  if (cfValues[0] < 0.5) { // Jika pH tidak ideal, maka akan mengurangi kadar oksigen
+    cfValues[1] = Math.min(cfValues[1] - 0.2, 0);
+  }
+  
+  if (cfValues[2] < 0.5) { // Jika suhu tidak ideal, maka akan mengurangi kejernihan
+    cfValues[3] = Math.min(cfValues[3] - 0.1, 0); 
+  }
+
+  cfTotal = cfValues.reduce((acc, cf) => acc + cf - (acc * cf), 0);
+
   // forward chaining
   rules.forEach(rule => {
     if (rule.condition(cfTotal)) {
@@ -125,7 +135,7 @@ function forwardChaining() {
 
   const cfPercentage = Math.round(cfTotal * 100);
   
-  //hasil, fakta, dan saran
+  // Hasil, fakta, dan saran
   let resultText = `<h3>Kesimpulan:</h3><p>CF Total: ${cfPercentage}%</p><ul>`;
   conclusions.forEach(conclusion => {
     resultText += `<li>${conclusion}</li>`;
