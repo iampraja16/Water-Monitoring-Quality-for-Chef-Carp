@@ -34,7 +34,7 @@ const questions = [
     question: 'Apakah air yang Anda gunakan terlihat jernih/keruh?',
     expertCF: 0.8, 
     options: [
-      { text: 'Sangat jernih', cf: 0.8, conclusionText: 'Kejernihan air sangat baik', adviceText: 'Lanjutkan menjaga kejernihan air untuk kesehatan ikan.' },
+      { text: 'Sangat jernih', cf: 0.9, conclusionText: 'Kejernihan air sangat baik', adviceText: 'Lanjutkan menjaga kejernihan air untuk kesehatan ikan.' },
       { text: 'Sedikit keruh', cf: 0.5, conclusionText: 'Kejernihan air kurang optimal', adviceText: 'Anda dapat melakukan pengurasan air dengan rentang waktu dua minggu sekali.' },
       { text: 'Sangat Keruh', cf: 0, conclusionText: 'Kejernihan air sangat buruk', adviceText: 'Anda Perlu memeriksa kondisi filtrasi pada akurium, dan melakukan pengurasan secara menyeluruh.' }
     ]
@@ -61,44 +61,52 @@ const questions = [
   }
 ];
 
+const rules = [
+  { id: 'R1', condition: (cf) => cf >= 0.8, conclusion: 'Lingkungan sangat mendukung untuk pemeliharaan ikan mas koki.' },
+  { id: 'R2', condition: (cf) => cf >= 0.5 && cf < 0.8, conclusion: 'Lingkungan cukup baik, tetapi ada beberapa hal yang dapat diperbaiki.' },
+  { id: 'R3', condition: (cf) => cf < 0.5, conclusion: 'Lingkungan kurang mendukung, perlu perhatian lebih lanjut.' }
+];
+
 function generateQuestions() {
   let questionHTML = '';
   questions.forEach((q, index) => {
-      questionHTML += `<div class="question"><p>${q.question}</p>`;
-      q.options.forEach((opt, optIndex) => {
-          questionHTML += `
-              <label class="option">
-                  <input type="radio" name="q${index}" value="${opt.cf}">
-                  ${opt.text}
-              </label>
-          `;
-      });
-      questionHTML += `</div>`;
+    questionHTML += `<div class="question"><p>${q.question}</p>`;
+    q.options.forEach((opt, optIndex) => {
+      questionHTML += `
+          <label class="option">
+              <input type="radio" name="q${index}" value="${opt.cf}">
+              ${opt.text}
+          </label>
+      `;
+    });
+    questionHTML += `</div>`;
   });
   document.getElementById('questions').innerHTML = questionHTML;
 }
-generateQuestions();
 
-function calculateCF() {
+function forwardChaining() {
   let cfValues = [];
-  let userConclusions = []; 
-  let userAdvices = [];     
+  let facts = [];
+  let conclusions = [];
 
   questions.forEach((q, index) => {
     const userAnswer = document.querySelector(`input[name="q${index}"]:checked`);
     const userCF = parseFloat(userAnswer?.value || 0);
     const expertCF = q.expertCF;
 
-    // Penggabungan menggunakan metode minimum
+    // Penggabungan CF dengan menggunakan metode/pendekekatan min
     const combinedCF = Math.min(userCF, expertCF);
     cfValues.push(combinedCF * 0.37);
 
     if (userAnswer) {
       const selectedOption = q.options.find(opt => opt.cf === userCF);
-      if (selectedOption) {
-        userConclusions.push(selectedOption.conclusionText);
-        userAdvices.push(selectedOption.adviceText);
-      }
+      facts.push({
+        question: q.question,
+        answer: selectedOption?.text || 'Tidak ada jawaban',
+        conclusionText: selectedOption?.conclusionText || 'Tidak ada kesimpulan',
+        adviceText: selectedOption?.adviceText || 'Tidak ada saran',
+        cf: combinedCF * 0.37
+      });
     }
   });
 
@@ -108,44 +116,44 @@ function calculateCF() {
     cfTotal = cfTotal + cfValues[i] - (cfTotal * cfValues[i]);
   }
 
+  // forward chaining
+  rules.forEach(rule => {
+    if (rule.condition(cfTotal)) {
+      conclusions.push(rule.conclusion);
+    }
+  });
+
   const cfPercentage = Math.round(cfTotal * 100);
-
-  let resultText = `<h3>Kesimpulan:</h3><p>CF Total: ${cfPercentage}%</p>`;
-  if (cfTotal >= 0.8) {
-    resultText += `<p>Lingkungan sangat mendukung untuk pemeliharaan ikan mas koki.</p>`;
-  } else if (cfTotal >= 0.5) {
-    resultText += `<p>Lingkungan cukup baik, tetapi ada beberapa hal yang dapat diperbaiki.</p>`;
-  } else {
-    resultText += `<p>Lingkungan kurang mendukung, perlu perhatian lebih lanjut.</p>`;
-  }
-
-  resultText += `<h3>Rincian Fakta:</h3><ul>`;
-  userConclusions.forEach(conclusion => {
+  
+  //hasil, fakta, dan saran
+  let resultText = `<h3>Kesimpulan:</h3><p>CF Total: ${cfPercentage}%</p><ul>`;
+  conclusions.forEach(conclusion => {
     resultText += `<li>${conclusion}</li>`;
   });
   resultText += `</ul>`;
 
+  let factsText = `<h3>Fakta:</h3><ul>`;
+  facts.forEach(fact => {
+    factsText += `<li><strong>${fact.question}</strong> - ${fact.answer} (${fact.conclusionText})</li>`;
+  });
+  factsText += `</ul>`;
+
   let adviceText = `<h3>Saran:</h3><ul>`;
-  userAdvices.forEach(advice => {
-    adviceText += `<li>${advice}</li>`;
+  facts.forEach(fact => {
+    adviceText += `<li>${fact.adviceText}</li>`;
   });
   adviceText += `</ul>`;
 
-  const resultContainer = document.getElementById('result-container');
-  resultContainer.style.display = 'flex';
+  document.getElementById('result-container').style.display = 'flex';
   document.getElementById('result').innerHTML = resultText;
+  document.getElementById('facts').innerHTML = factsText;
   document.getElementById('advice').innerHTML = adviceText;
-  
 }
 
-document.querySelectorAll('input[type="radio"]').forEach(radio => {
-  radio.addEventListener('change', calculateCF);
-});
-document.getElementById('calculate-button').addEventListener('click', calculateCF);
-
-document.getElementById('calculate-button').addEventListener('click', calculateCF);
 document.getElementById('enter-button').addEventListener('click', () => {
   document.getElementById('landing-page').style.display = 'none';
   document.getElementById('main-page').style.display = 'block';
   generateQuestions();
 });
+
+document.getElementById('calculate-button').addEventListener('click', forwardChaining);
