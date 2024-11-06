@@ -134,7 +134,7 @@ function forwardChaining() {
 
   let factsText = `<h3>Fakta:</h3><ul>`;
   facts.forEach(fact => {
-    factsText += `<li><strong>${fact.question}</strong> - ${fact.answer} (${fact.conclusionText})</li>`;
+    factsText += `<li>${fact.question} - <strong>${fact.answer} (${fact.conclusionText})</strong></li>`;
   });
   factsText += `</ul>`;
 
